@@ -135,7 +135,7 @@ def setup(df):
         "CommandedThrottleActuatorControl"
     ]
     
-    plt.figure(figsize=(9, 7))
+    fig, ax = plt.subplots(figsize=(9, 7))
     time_field, time_field_list = get_field(df, "Time")
     x = [datetime.strptime(i, "%S.%f").second for i in time_field_list[1:]]
     engine_field, engine_field_list = get_field(df, "EngineRPM")
@@ -144,27 +144,33 @@ def setup(df):
     temp_df = pd.DataFrame(d)
     sns.set_style("darkgrid")
     sns.lineplot(x='Time', y='Engine RPM', data=temp_df)
+    ax.set_xlim(0, int(float(max(time_field_list, key = float))) - 1)
+    ax.set_xticks(range(0, int(float(max(time_field_list, key = float)))))
     plt.show()
 
     fig, axs = plt.subplots(2, 2, figsize=(9, 7))
     time_field, time_field_list = get_field(df, "Time")
-    x = [datetime.strptime(i, "%S.%f").second for i in time_field_list[1:]]
+    x = [datetime.strptime(i, "%S.%f") for i in time_field_list[1:]]
     engine_field, engine_field_list = get_field(df, "EngineRPM")
     y1 = engine_field_list[1:].astype(float)
     axs[0, 0].plot(x, y1)
-    axs[0, 0].set(xlabel='Time', ylabel='Engine RPM\n')
+    axs[0, 0].set(xlabel='', ylabel='Engine RPM\n')
+    axs[0, 0].set_xticklabels([])
     tia_field, tia_field_list = get_field(df, "tia")
     y2 = tia_field_list[1:].astype(float)
     axs[0, 1].plot(x, y2, 'tab:orange')
-    axs[0, 1].set(xlabel='Time', ylabel='Intake Air Temp')
+    axs[0, 1].set(xlabel='', ylabel='Intake Air Temp')
+    axs[0, 1].set_xticklabels([])
     map_field, map_field_list = get_field(df, "map_mes")
     y3 = map_field_list[1:].astype(float)
     axs[1, 0].plot(x, y3, 'tab:green')
-    axs[1, 0].set(xlabel='Time', ylabel='Boost\n')
+    axs[1, 0].set(xlabel='', ylabel='Boost\n')
+    axs[1, 0].set_xticklabels([])
     timing_advance_field, timing_advance_field_list = get_field(df, "IgnitionTimingAdvancefor#1Cylinder")
     y4 = timing_advance_field_list[1:].astype(float)
     axs[1, 1].plot(x, y4, 'tab:red')
-    axs[1, 1].set(xlabel='Time', ylabel='Timing Advance')
+    axs[1, 1].set(xlabel='', ylabel='Timing Advance')
+    axs[1, 1].set_xticklabels([])
     plt.show()
 
     #for field in air_fields:
