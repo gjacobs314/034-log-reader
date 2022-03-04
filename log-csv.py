@@ -162,33 +162,32 @@ def search_fields(df):
     print_all_fields(df)
     found_field = ""
     found_field_list = ""
-    while True:
-        prompt_input = input("\nENTER FIELD INDEX : ")
-        for x, field in enumerate(all_logging_fields):
-            try:
-                if int(prompt_input) == x:
-                    found_field, found_field_list, found_field_str = get_field(df, field)
-                    while True:
-                        op = input("\n" + found_field_str.strip() + " - [P] PRINT [G] GRAPH : ")
-                        if op:
-                            if op == 'p' or op == 'P':
-                                print_field(found_field, field)
-                                break
-                            if op == 'g' or op == 'G':
-                                graph_field(df, field, found_field_list)
-                                break
-                        print("\nCommand not found....\n")
-            except Exception:
-                prompt_input = prompt_input
-        if len(found_field_list) == 0:
-            print("\nInvalid index...")
+    prompt_input = input("\nENTER FIELD INDEX : ")
+    for x, field in enumerate(all_logging_fields):
+        try:
+            if int(prompt_input) == x:
+                found_field, found_field_list, found_field_str = get_field(df, field)
+                if len(found_field_list) == 0:
+                    print("\nInvalid index...")
+                while True:
+                    op = input("\n" + found_field_str.strip() + " - [P] PRINT [G] GRAPH : ")
+                    if op:
+                        if op == 'p' or op == 'P':
+                            print_field(found_field, field)
+                            break
+                        if op == 'g' or op == 'G':
+                            graph_field(df, field, found_field_list)
+                            break
+                    print("\nCommand not found....\n")
+        except Exception:
+            prompt_input = prompt_input
+    return
 
 def print_fields(df):
     print("\n --------------")
     print("| PRINT FIELDS |")
     print(" --------------\n")
     print_all_fields(df)
-    found_field = ""
     found_field_list = ""
     while True:
         prompt_input = input("\nENTER FIELD INDICES (COMMA SEPARATED) : ")
@@ -214,52 +213,20 @@ def print_fields(df):
                     prompt_input = prompt_input
         header = ""
         for name in field_names:
-            header += "{:<15} ".format(name)
+            header += "{:<15} ".format(str(name))
         print(header)
         for i in range(len(print_fields[0])):
             printout = ""
             for j in range(len(print_fields)):
                 printout += "{:<15} ".format(np.array(print_fields[j])[i])
             print(printout)
+        return
 
 def graph_fields(df):
     print("\n --------------")
     print("| GRAPH FIELDS |")
     print(" --------------\n")
     print_all_fields(df)
-    found_field = ""
-    found_field_list = ""
-    while True:
-        prompt_input = input("\nENTER FIELD INDICES (COMMA SEPARATED) : ")
-        prompt_input = prompt_input.replace(" ", "")
-        prompt_input = [int(x) for x in prompt_input.split(',') if x.strip().isdigit()]
-        print()
-        if len(prompt_input) == 0:
-            print("\nInvalid indices...")
-            continue
-        if int(max(prompt_input, key = int)) > 48 or int(max(prompt_input, key = int)) < 0:
-            print("\nInvalid indices...")
-            continue
-        field_names = []
-        print_fields = []
-        for prompt_field in prompt_input:
-            for x, field in enumerate(all_logging_fields):
-                try:
-                    if int(prompt_field) == x:
-                        found_field, found_field_list, found_field_str = get_field(df, field)
-                        field_names.append(field)
-                        print_fields.append(found_field_list)
-                except Exception:
-                    prompt_input = prompt_input
-        header = ""
-        for name in field_names:
-            header += "{:<15} ".format(name)
-        print(header)
-        for i in range(len(print_fields[0])):
-            printout = ""
-            for j in range(len(print_fields)):
-                printout += "{:<15} ".format(np.array(print_fields[j])[i])
-            print(printout)
 
 def graph_field(df, field_name, field_list):
     fig, ax = plt.subplots(figsize=(10, 8))
