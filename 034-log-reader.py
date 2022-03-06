@@ -1,3 +1,4 @@
+from ast import For
 import sys
 import time
 from datetime import datetime
@@ -7,6 +8,8 @@ sns.set_style("darkgrid")
 import collections
 import matplotlib.pyplot as plt
 import numpy as np
+from colorama import init, Fore, Back, Style
+init(autoreset=False)
 
 all_logging_fields = [
        "Time",
@@ -131,12 +134,12 @@ def main():
         df = pd.read_csv(sys.argv[1])
         loop(df)
     else:
-        print("No logfile specified, exiting...")
-        time.sleep(2)
+        input(Style.BRIGHT + Fore.LIGHTYELLOW_EX + "\nNo logfile specified, press enter to exit...")
+        print()
         exit(0)
 
 def loop(df):
-    print(" ________________________")
+    print(Style.BRIGHT + Fore.LIGHTYELLOW_EX + " ________________________")
     print("|                        |")
     print("| 034 Log Analyzer Shell |")
     print("|________________________|")
@@ -201,6 +204,7 @@ def print_fields(df):
             print("Invalid indices...")
             continue
         field_names = []
+        field_nums = []
         print_fields = []
         for prompt_field in prompt_input:
             for x, field in enumerate(all_logging_fields):
@@ -208,13 +212,17 @@ def print_fields(df):
                     if int(prompt_field) == x:
                         found_field, found_field_list, found_field_str = get_field(df, field)
                         field_names.append(field)
+                        field_nums.append(x)
                         print_fields.append(found_field_list)
                 except Exception:
                     prompt_input = prompt_input
+        for x, num in enumerate(field_nums):
+            print("{:<15} {}".format("[" + str(num) + "]", str(field_names[x])))
+        print()
         header = ""
-        for name in field_names:
-            header += "{:<15} ".format(str(name))
-        print(header)
+        for num in field_nums:
+            header += "[{:<15}".format(str(num) + "]")
+        print(header + "\n")
         for i in range(len(print_fields[0])):
             printout = ""
             for j in range(len(print_fields)):
@@ -226,7 +234,7 @@ def graph_fields(df):
     print("\n --------------")
     print("| GRAPH FIELDS |")
     print(" --------------\n")
-    print_all_fields(df)
+    print("Still working on this...")
 
 def graph_field(df, field_name, field_list):
     fig, ax = plt.subplots(figsize=(10, 8))
