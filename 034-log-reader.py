@@ -1,4 +1,3 @@
-from ast import For
 import sys
 import time
 from datetime import datetime
@@ -131,7 +130,12 @@ ignition_fields = [
 
 def main():
     if len(sys.argv) < 3 and len(sys.argv) >= 2:
-        df = pd.read_csv(sys.argv[1])
+        try:
+            df = pd.read_csv(sys.argv[1])
+        except Exception:
+            input(Style.BRIGHT + Fore.LIGHTYELLOW_EX + "\nError loading logfile, press enter to exit...")
+            print()
+            exit(0)
         loop(df)
     else:
         input(Style.BRIGHT + Fore.LIGHTYELLOW_EX + "\nNo logfile specified, press enter to exit...")
@@ -139,14 +143,14 @@ def main():
         exit(0)
 
 def loop(df):
-    print(Style.BRIGHT + Fore.LIGHTYELLOW_EX + " ________________________")
-    print("|                        |")
-    print("| 034 Log Analyzer Shell |")
-    print("|________________________|")
+    print(Style.BRIGHT + Fore.LIGHTYELLOW_EX + " ______________________")
+    print("|                      |")
+    print("| 034 Log Reader Shell |")
+    print("|______________________|")
     while True:
         found_field = ""
         found_field_list = ""
-        prompt_input = input("\n[S] SEARCH [P] PRINT [G] GRAPH : ")
+        prompt_input = input("\n[S] SEARCH [P] PRINT [G] GRAPH [A] PRINT ALL : ")
         if prompt_input.lower() == "s":
             search_fields(df)
             continue
@@ -155,6 +159,9 @@ def loop(df):
             continue
         if prompt_input.lower() == "g":
             graph_fields(df)
+            continue
+        if prompt_input.lower() == "a":
+            print_all(df)
             continue
         print("\nCommand not found...")
     
@@ -165,7 +172,22 @@ def search_fields(df):
     print_all_fields(df)
     found_field = ""
     found_field_list = ""
-    prompt_input = input("\nENTER FIELD INDEX : ")
+    prompt_input = ""
+    while True:
+        prompt_input = input("\nENTER FIELD INDEX : ")
+        if len(prompt_input) == 0:
+            print("\nInvalid index...")
+            continue
+        try:
+            int_input = int(prompt_input)
+        except Exception:
+            print("\nInvalid index...")
+            continue
+        if int(prompt_input) > 48 or int(prompt_input) < 0:
+            print("\nInvalid index...")
+            continue
+        else:
+            break
     for x, field in enumerate(all_logging_fields):
         try:
             if int(prompt_input) == x:
@@ -234,7 +256,46 @@ def graph_fields(df):
     print("\n --------------")
     print("| GRAPH FIELDS |")
     print(" --------------\n")
-    print("Still working on this...")
+    print_all_fields(df)
+    found_field_list = ""
+    while True:
+        prompt_input = input("\nENTER FIELD INDICES (COMMA SEPARATED) : ")
+        prompt_input = prompt_input.replace(" ", "")
+        prompt_input = [int(x) for x in prompt_input.split(',') if x.strip().isdigit()]
+        print()
+        if len(prompt_input) == 0:
+            print("Invalid indices...")
+            continue
+        if int(max(prompt_input, key = int)) > 48 or int(max(prompt_input, key = int)) < 0:
+            print("Invalid indices...")
+            continue
+        field_names = []
+        field_nums = []
+        print_fields = []
+        for prompt_field in prompt_input:
+            for x, field in enumerate(all_logging_fields):
+                try:
+                    if int(prompt_field) == x:
+                        found_field, found_field_list, found_field_str = get_field(df, field)
+                        field_names.append(field)
+                        field_nums.append(x)
+                        print_fields.append(found_field_list)
+                except Exception:
+                    prompt_input = prompt_input
+        for x, num in enumerate(field_nums):
+            print("{:<15} {}".format("[" + str(num) + "]", str(field_names[x])))
+        graph_multiple_fields(df, field_names, print_fields)
+        return
+
+def print_all(df):
+    print("\n ------------------")
+    print("| PRINT ALL FIELDS |")
+    print(" ------------------\n")
+    print_all_data(df)
+
+def graph_multiple_fields(df, field_names, field_lists):
+    for i in range(len(field_lists)):
+        graph_field(df, field_names[i], field_lists[i])
 
 def graph_field(df, field_name, field_list):
     fig, ax = plt.subplots(figsize=(10, 8))
@@ -261,9 +322,8 @@ def get_field(df, field):
             field_list = field_list.strip('][').split(', ')
             field_list = np.array(field_list)
             return field, field_list, found_field_str
-    return "ERROR"
 
-def print_field(column, field):
+def print_field(column):
     print()
     col_length = len(column)
     for val in range(0, col_length):
@@ -277,51 +337,12 @@ def print_all_fields(df):
         print("{:<15} {}".format("[" + str(i) + "]", columnName))
         columns[columnName].append(columnData.values)
 
-def plot(df):
-    fig, ax = plt.subplots(figsize=(10, 8))
-    time_field, time_field_list = get_field(df, "Time")
-    x = [datetime.strptime(i, "%S.%f").second for i in time_field_list[1:]]
-    engine_field, engine_field_list = get_field(df, "EngineRPM")
-    y = engine_field_list[1:].astype(float)
-    d = {'Time': x, 'Engine RPM': y}
-    temp_df = pd.DataFrame(d)
-    sns.set_style("darkgrid")
-    sns.lineplot(x='Time', y='Engine RPM', data=temp_df)
-    ax.set_xlim(0, int(float(max(time_field_list, key = float))) - 1)
-    ax.set_xticks(range(0, int(float(max(time_field_list, key = float)))))
-    plt.show()
-
-    fig, axs = plt.subplots(2, 2, figsize=(12, 8))
-    time_field, time_field_list = get_field(df, "Time")
-    x = [datetime.strptime(i, "%S.%f") for i in time_field_list[1:]]
-    engine_field, engine_field_list = get_field(df, "EngineRPM")
-    y1 = engine_field_list[1:].astype(float)
-    axs[0, 0].plot(x, y1)
-    axs[0, 0].set(xlabel='', ylabel='Engine RPM\n')
-    axs[0, 0].set_xticklabels([])
-    tia_field, tia_field_list = get_field(df, "tia")
-    y2 = tia_field_list[1:].astype(float)
-    axs[0, 1].plot(x, y2, 'tab:orange')
-    axs[0, 1].set(xlabel='', ylabel='Intake Air Temp')
-    axs[0, 1].set_xticklabels([])
-    map_field, map_field_list = get_field(df, "CommandedThrottleActuatorControl")
-    y3 = map_field_list[1:].astype(float)
-    axs[1, 0].plot(x, y3, 'tab:green')
-    axs[1, 0].set(xlabel='', ylabel='Throttle\n')
-    axs[1, 0].set_xticklabels([])
-    timing_advance_field, timing_advance_field_list = get_field(df, "IgnitionTimingAdvancefor#1Cylinder")
-    y4 = timing_advance_field_list[1:].astype(float)
-    axs[1, 1].plot(x, y4, 'tab:red')
-    axs[1, 1].set(xlabel='', ylabel='Timing Advance')
-    axs[1, 1].set_xticklabels([])
-    plt.show()
-
-def print_all(df):
+def print_all_data(df):
     columns = collections.defaultdict(list)
     for i, (columnName, columnData) in enumerate(df.iteritems()):
         columnName = str(columnName).replace(" ", "")
         columnName = columnName.replace('"', "")
-        print("{:<5} {}".format("[" + str(i) + "]", columnName))
+        print("{:<15} {}".format("[" + str(i) + "]", columnName))
         columns[columnName].append(columnData.values)
     for j, col in enumerate(columns.items()):
         name = str(col[0]).upper()
@@ -334,11 +355,11 @@ def print_all(df):
                 current += val + ", "
         current = current[:-2]
         print()
-        input("{:<5} {} {}".format("[" + str(j) + "]", name, "(" + current + ")"))
+        input("{} {} {} {}".format("[" + str(j) + "]", name, "(" + current + ")", ": PRESS ENTER"))
         print()
         for val in range(2, col_length):
             print("{:<7} {:<25} {}".format("", col[0][val], name))
-            time.sleep(0.0025)
+            time.sleep(0.0015)
     print()
     print("[DONE]")
     print()
