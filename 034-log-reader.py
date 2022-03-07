@@ -3,11 +3,12 @@ import time
 from datetime import datetime
 import pandas as pd
 import seaborn as sns
-sns.set_style("darkgrid")
 import collections
 import matplotlib.pyplot as plt
 import numpy as np
 from colorama import init, Fore, Back, Style
+
+sns.set_style("darkgrid")
 init(autoreset=False)
 
 all_logging_fields = [
