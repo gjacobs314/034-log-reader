@@ -1,5 +1,4 @@
 import sys
-import time
 from datetime import datetime
 import pandas as pd
 import seaborn as sns
@@ -257,42 +256,125 @@ def graph_fields(df):
     print("\n --------------")
     print("| GRAPH FIELDS |")
     print(" --------------\n")
-    print_all_fields(df)
-    found_field_list = ""
-    while True:
-        prompt_input = input("\nENTER FIELD INDICES (COMMA SEPARATED) : ")
-        prompt_input = prompt_input.replace(" ", "")
-        prompt_input = [int(x) for x in prompt_input.split(',') if x.strip().isdigit()]
-        print()
-        if len(prompt_input) == 0:
-            print("Invalid indices...")
-            continue
-        if int(max(prompt_input, key = int)) > 48 or int(max(prompt_input, key = int)) < 0:
-            print("Invalid indices...")
-            continue
-        field_names = []
-        field_nums = []
-        print_fields = []
-        for prompt_field in prompt_input:
-            for x, field in enumerate(all_logging_fields):
-                try:
-                    if int(prompt_field) == x:
-                        found_field, found_field_list, found_field_str = get_field(df, field)
-                        field_names.append(field)
-                        field_nums.append(x)
-                        print_fields.append(found_field_list)
-                except Exception:
-                    prompt_input = prompt_input
-        for x, num in enumerate(field_nums):
-            print("{:<15} {}".format("[" + str(num) + "]", str(field_names[x])))
-        graph_multiple_fields(df, field_names, print_fields)
-        return
+    choice = input("[I] INDIVIDUAL FIELDS [G] GROUPED FIELDS : ")
+    if str(choice).lower == "i":
+        print_all_fields(df)
+        found_field_list = ""
+        while True:
+            prompt_input = input("\nENTER FIELD INDICES (COMMA SEPARATED) : ")
+            prompt_input = prompt_input.replace(" ", "")
+            prompt_input = [int(x) for x in prompt_input.split(',') if x.strip().isdigit()]
+            print()
+            if len(prompt_input) == 0:
+                print("Invalid indices...")
+                continue
+            if int(max(prompt_input, key = int)) > 48 or int(max(prompt_input, key = int)) < 0:
+                print("Invalid indices...")
+                continue
+            field_names = []
+            field_nums = []
+            print_fields = []
+            for prompt_field in prompt_input:
+                for x, field in enumerate(all_logging_fields):
+                    try:
+                        if int(prompt_field) == x:
+                            found_field, found_field_list, found_field_str = get_field(df, field)
+                            field_names.append(field)
+                            field_nums.append(x)
+                            print_fields.append(found_field_list)
+                    except Exception:
+                        prompt_input = prompt_input
+            for x, num in enumerate(field_nums):
+                print("{:<15} {}".format("[" + str(num) + "]", str(field_names[x])))
+            graph_multiple_fields(df, field_names, print_fields)
+    else:
+        get_groups(df)
+    return
 
 def print_all(df):
     print("\n ------------------")
     print("| PRINT ALL FIELDS |")
     print(" ------------------\n")
     print_all_data(df)
+
+def get_groups(df):
+    knock = [
+        "iga_ad_1_knk[0]",
+        "iga_ad_1_knk[1]",
+        "iga_ad_1_knk[2]",
+        "iga_ad_1_knk[3]",
+        "iga_ad_1_knk[4]",
+        "iga_ad_1_knk[5]"
+    ]
+
+    afr = [
+        "lamb_sp[1]",
+        "LAMB_SP[2]",
+        "LAMB_LS_UP[1]",
+        "LAMB_LS_UP[2]"
+    ]
+
+    egt = [
+        "teg_dyn_up_cat[1]",
+        "TEG_DYN_UP_CAT[2]"
+    ]
+    
+    injector_pulse = [
+        "TI_1_HOM[0]",
+        "TI_1_HOM[3]"
+    ]
+
+    fuel_trim = [
+        "ShortTermFuelTrim-Bank1",
+        "LongTermFuelTrim-Bank1",
+        "ShortTermFuelTrim-Bank2",
+        "LongTermFuelTrim-Bank2"
+    ]
+
+    boost = [
+        "amp_mes",
+        "map",
+        "map_mes",
+        "map_1_mes",
+        "map_2_mes",
+        "pdt_mes",
+        "maf"
+    ]
+
+    temps = [
+        "tia",
+        "Ambientairtemperature"
+    ]
+
+    graph_groups = [knock, afr, egt, injector_pulse, fuel_trim, boost, temps]
+    for i in range(len(graph_groups)):
+        print("\n[" + str(i) + "]")
+        for j in range(len(graph_groups[i])):
+            print(graph_groups[i][j])
+    field_names = []
+    field_lists = []
+    group = input("\nENTER GROUP INDEX : ")
+    for i in range(len(graph_groups)):
+        if int(group) == i:
+            for field in graph_groups[i]:
+                found_field, found_field_list, found_field_str = get_field(df, field)
+                field_names.append(field)
+                field_lists.append(np.array(found_field_list))
+    graph_group(df, field_names, field_lists)
+
+def graph_group(df, field_names, field_lists):
+    time_field, time_field_list, time_field_str = get_field(df, "Time")
+    x = [datetime.strptime(i, "%S.%f").second for i in time_field_list[1:]]
+    fig, ax = plt.subplots(figsize=(10, 8))
+    d = {'\nTime': x}
+    for i in range(len(field_lists)):
+        y = field_lists[i][1:].astype(float)
+        d[field_names[i] + '\n'] = y
+    temp_df = pd.DataFrame(d)
+    sns.lineplot(x='\nTime', y='Values\n', hue='Fields\n', data=pd.melt(temp_df, ['\nTime'], var_name = 'Fields\n', value_name = 'Values\n'))
+    ax.set_xlim(0, int(float(max(time_field_list, key = float))) - 1)
+    ax.set_xticks(range(0, int(float(max(time_field_list, key = float)))))
+    plt.show()
 
 def graph_multiple_fields(df, field_names, field_lists):
     for i in range(len(field_lists)):
@@ -324,7 +406,7 @@ def get_field(df, field):
             field_list = np.array(field_list)
             return field, field_list, found_field_str
 
-def print_field(column):
+def print_field(column, field):
     print()
     col_length = len(column)
     for val in range(0, col_length):
@@ -360,10 +442,7 @@ def print_all_data(df):
         print()
         for val in range(2, col_length):
             print("{:<7} {:<25} {}".format("", col[0][val], name))
-            time.sleep(0.0015)
-    print()
-    print("[DONE]")
-    print()
+    print("\n[DONE]")
 
 if __name__ == "__main__":
     main()
