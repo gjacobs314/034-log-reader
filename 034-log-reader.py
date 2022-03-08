@@ -256,8 +256,11 @@ def graph_fields(df):
     print("\n --------------")
     print("| GRAPH FIELDS |")
     print(" --------------\n")
-    choice = input("[I] INDIVIDUAL FIELDS [G] GROUPED FIELDS : ")
-    if str(choice).lower == "i":
+    choice = input("[C] CUSTOM FIELDS [G] GROUPED FIELDS : ")
+    if str(choice).lower() == "g":
+        get_groups(df)
+    else:
+        print()
         print_all_fields(df)
         found_field_list = ""
         while True:
@@ -286,9 +289,8 @@ def graph_fields(df):
                         prompt_input = prompt_input
             for x, num in enumerate(field_nums):
                 print("{:<15} {}".format("[" + str(num) + "]", str(field_names[x])))
-            graph_multiple_fields(df, field_names, print_fields)
-    else:
-        get_groups(df)
+            #graph_multiple_fields(df, field_names, print_fields)
+            graph_group(df, field_names, print_fields)
     return
 
 def print_all(df):
@@ -332,6 +334,7 @@ def get_groups(df):
     ]
 
     boost = [
+        "pv_av",
         "amp_mes",
         "map",
         "map_mes",
