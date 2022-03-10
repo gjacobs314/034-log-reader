@@ -4,6 +4,7 @@ import pandas as pd
 import seaborn as sns
 import collections
 import matplotlib.pyplot as plt
+import plotly.express as px
 import numpy as np
 from colorama import init, Fore, Back, Style
 
@@ -150,7 +151,7 @@ def loop(df):
     while True:
         found_field = ""
         found_field_list = ""
-        prompt_input = input("\n[S] SEARCH [P] PRINT [G] GRAPH [A] PRINT ALL : ")
+        prompt_input = input("\n[S] SEARCH [P] PRINT [G] GRAPH [A] GRAPH ALL : ")
         if prompt_input.lower() == "s":
             search_fields(df)
             continue
@@ -161,10 +162,10 @@ def loop(df):
             graph_fields(df)
             continue
         if prompt_input.lower() == "a":
-            print_all(df)
+            graph_all(df)
             continue
         print("\nCommand not found...")
-    
+
 def search_fields(df):
     print("\n ---------------")
     print("| SEARCH FIELDS |")
@@ -256,48 +257,51 @@ def graph_fields(df):
     print("\n --------------")
     print("| GRAPH FIELDS |")
     print(" --------------\n")
-    choice = input("[C] CUSTOM FIELDS [G] GROUPED FIELDS : ")
-    if str(choice).lower() == "g":
-        get_groups(df)
-    else:
+    #choice = input("[C] CUSTOM FIELDS [G] GROUPED FIELDS : ")
+    #if str(choice).lower() == "g":
+    #    get_groups(df)
+    #else:
+    print()
+    print_all_fields(df)
+    found_field_list = ""
+    while True:
+        prompt_input = input("\nENTER FIELD INDICES (COMMA SEPARATED) : ")
+        prompt_input = prompt_input.replace(" ", "")
+        prompt_input = [int(x) for x in prompt_input.split(',') if x.strip().isdigit()]
         print()
-        print_all_fields(df)
-        found_field_list = ""
-        while True:
-            prompt_input = input("\nENTER FIELD INDICES (COMMA SEPARATED) : ")
-            prompt_input = prompt_input.replace(" ", "")
-            prompt_input = [int(x) for x in prompt_input.split(',') if x.strip().isdigit()]
-            print()
-            if len(prompt_input) == 0:
-                print("Invalid indices...")
-                continue
-            if int(max(prompt_input, key = int)) > 48 or int(max(prompt_input, key = int)) < 0:
-                print("Invalid indices...")
-                continue
-            field_names = []
-            field_nums = []
-            print_fields = []
-            for prompt_field in prompt_input:
-                for x, field in enumerate(all_logging_fields):
-                    try:
-                        if int(prompt_field) == x:
-                            found_field, found_field_list, found_field_str = get_field(df, field)
-                            field_names.append(field)
-                            field_nums.append(x)
-                            print_fields.append(found_field_list)
-                    except Exception:
-                        prompt_input = prompt_input
-            for x, num in enumerate(field_nums):
-                print("{:<15} {}".format("[" + str(num) + "]", str(field_names[x])))
-            #graph_multiple_fields(df, field_names, print_fields)
-            graph_group(df, field_names, print_fields)
-    return
+        if len(prompt_input) == 0:
+            print("Invalid indices...")
+            continue
+        if int(max(prompt_input, key = int)) > 48 or int(max(prompt_input, key = int)) < 0:
+            print("Invalid indices...")
+            continue
+        field_names = []
+        field_nums = []
+        print_fields = []
+        for prompt_field in prompt_input:
+            for x, field in enumerate(all_logging_fields):
+                try:
+                    if int(prompt_field) == x:
+                        found_field, found_field_list, found_field_str = get_field(df, field)
+                        field_names.append(field)
+                        field_nums.append(x)
+                        print_fields.append(found_field_list)
+                except Exception:
+                    prompt_input = prompt_input
+        for x, num in enumerate(field_nums):
+            print("{:<15} {}".format("[" + str(num) + "]", str(field_names[x])))
+        graph_group(df, field_names, print_fields)
+        return
 
-def print_all(df):
+def graph_all(df):
     print("\n ------------------")
-    print("| PRINT ALL FIELDS |")
+    print("| GRAPH ALL FIELDS |")
     print(" ------------------\n")
-    print_all_data(df)
+    fig = px.line(data_frame = df, x = df.columns[1], y = df.columns[1:], title = "034-log-reader", markers = True)
+    fig.update_xaxes(title_text = "Time (Seconds)")
+    fig.update_yaxes(title_text = "")
+    fig.update_layout(autotypenumbers = 'convert types')
+    fig.show()
 
 def get_groups(df):
     knock = [
@@ -320,7 +324,7 @@ def get_groups(df):
         "teg_dyn_up_cat[1]",
         "TEG_DYN_UP_CAT[2]"
     ]
-    
+
     injector_pulse = [
         "TI_1_HOM[0]",
         "TI_1_HOM[3]"
@@ -368,7 +372,7 @@ def get_groups(df):
 def graph_group(df, field_names, field_lists):
     time_field, time_field_list, time_field_str = get_field(df, "Time")
     x = [datetime.strptime(i, "%S.%f").second for i in time_field_list[1:]]
-    fig, ax = plt.subplots(figsize=(10, 8))
+    fig, ax = plt.subplots(figsize=(10, 8), num = '034-log-reader')
     d = {'\nTime': x}
     for i in range(len(field_lists)):
         y = field_lists[i][1:].astype(float)
@@ -384,7 +388,7 @@ def graph_multiple_fields(df, field_names, field_lists):
         graph_field(df, field_names[i], field_lists[i])
 
 def graph_field(df, field_name, field_list):
-    fig, ax = plt.subplots(figsize=(10, 8))
+    fig, ax = plt.subplots(figsize=(10, 8), num = '034-log-reader')
     time_field, time_field_list, time_field_str = get_field(df, "Time")
     x = [datetime.strptime(i, "%S.%f").second for i in time_field_list[1:]]
     y = field_list[1:].astype(float)
@@ -422,30 +426,6 @@ def print_all_fields(df):
         columnName = columnName.replace('"', "")
         print("{:<15} {}".format("[" + str(i) + "]", columnName))
         columns[columnName].append(columnData.values)
-
-def print_all_data(df):
-    columns = collections.defaultdict(list)
-    for i, (columnName, columnData) in enumerate(df.iteritems()):
-        columnName = str(columnName).replace(" ", "")
-        columnName = columnName.replace('"', "")
-        print("{:<15} {}".format("[" + str(i) + "]", columnName))
-        columns[columnName].append(columnData.values)
-    for j, col in enumerate(columns.items()):
-        name = str(col[0]).upper()
-        current = ""
-        col = columns.get(col[0])
-        col_length = len(col[0])
-        for val in range(0, 2):
-            val = str(col[0][val]).replace(" ", "")
-            if val:
-                current += val + ", "
-        current = current[:-2]
-        print()
-        input("{} {} {} {}".format("[" + str(j) + "]", name, "(" + current + ")", ": PRESS ENTER"))
-        print()
-        for val in range(2, col_length):
-            print("{:<7} {:<25} {}".format("", col[0][val], name))
-    print("\n[DONE]")
 
 if __name__ == "__main__":
     main()
